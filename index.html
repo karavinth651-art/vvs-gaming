@@ -28,7 +28,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-body)
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:10px}
 
 /* LOGIN */
-.login-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;
+.login-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;overflow-y:auto;-webkit-overflow-scrolling:touch;
   background-image:radial-gradient(ellipse 70% 50% at 30% 20%,rgba(0,245,255,.08) 0%,transparent 60%),
   radial-gradient(ellipse 60% 40% at 70% 80%,rgba(255,60,172,.08) 0%,transparent 60%)}
 .login-box{width:340px;max-width:95vw;background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:32px 28px;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 40px rgba(0,245,255,.08);animation:modalIn .3s ease}
@@ -495,7 +495,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.6) sepia(1) s
 .rpt-period strong{color:var(--neon-cyan)}
 
 /* ═══════════════════════════════════════════════
-   MOBILE & PWA — Android + iPhone
+   MOBILE & PWA — Android + iPhone  (ENHANCED)
    ═══════════════════════════════════════════════ */
 
 /* PWA / safe area support for iPhone notch */
@@ -516,133 +516,250 @@ body { overscroll-behavior: none; }
   left: 0; right: 0;
   background: var(--bg2);
   border-top: 1px solid var(--border2);
-  padding: 8px 0 calc(8px + var(--safe-bottom));
+  padding: 6px 0 calc(6px + var(--safe-bottom));
   z-index: 300;
   grid-template-columns: repeat(5, 1fr);
+  box-shadow: 0 -4px 20px rgba(0,0,0,.4);
 }
 .mobile-nav.visible { display: grid; }
 .mnav-btn {
   display: flex; flex-direction: column; align-items: center;
-  gap: 3px; background: none; border: none; cursor: pointer;
+  gap: 4px; background: none; border: none; cursor: pointer;
   color: var(--text-secondary); font-family: var(--font-body);
-  font-size: 9px; font-weight: 600; letter-spacing: .04em;
-  text-transform: uppercase; padding: 4px 2px; transition: color .2s;
+  font-size: 11px; font-weight: 600; letter-spacing: .03em;
+  text-transform: uppercase; padding: 6px 4px; transition: color .2s;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 60px; justify-content: center;
 }
 .mnav-btn.active { color: var(--neon-cyan); }
-.mnav-btn.active .mnav-icon { background: rgba(0,245,255,.12); }
-.mnav-icon {
-  width: 36px; height: 36px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px; transition: background .2s;
+.mnav-btn.active .mnav-icon {
+  background: rgba(0,245,255,.15);
+  box-shadow: 0 0 12px rgba(0,245,255,.2);
 }
-.mnav-btn:active .mnav-icon { transform: scale(.9); }
+.mnav-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; transition: all .2s;
+}
+.mnav-btn:active .mnav-icon { transform: scale(.88); }
 
 @media (max-width: 768px) {
 
   /* App padding accounts for bottom nav */
-  .app { padding: 1rem .75rem calc(80px + var(--safe-bottom)); }
+  .app { padding: 1rem .85rem calc(90px + var(--safe-bottom)); }
 
   /* ── HEADER ── */
   .header { margin-bottom: 1rem; gap: 6px; }
-  .header-right { display: none; } /* hidden — moved to bottom nav */
-  .header-left { gap: 8px; }
-  .header h1 { font-size: 13px; }
-  .logo-icon { width: 34px; height: 34px; font-size: 16px; }
+  .header-right { display: none; }
+  .header-left { gap: 10px; }
+  .header h1 { font-size: 15px; }
+  .logo-icon { width: 38px; height: 38px; font-size: 17px; }
 
-  /* Show mobile top bar with clock + user + branch */
+  /* ── MOBILE TOP BAR ── */
   .mobile-topbar {
     display: flex !important;
     align-items: center; justify-content: space-between;
-    background: var(--bg2); border-bottom: 1px solid var(--border);
-    padding: 8px 12px calc(8px + var(--safe-top));
+    background: var(--bg2); border-bottom: 1px solid var(--border2);
+    padding: calc(10px + var(--safe-top)) 14px 10px;
     position: sticky; top: 0; z-index: 100;
     gap: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.3);
   }
-  .mobile-topbar .clock { font-size: 11px; padding: 4px 8px; }
-  .mobile-topbar .cloud-badge { padding: 4px 8px; font-size: 10px; }
-  .mobile-topbar .user-badge { padding: 4px 8px; }
-  .mobile-topbar .user-badge-name { font-size: 11px; }
+  .mobile-topbar .clock { font-size: 13px; padding: 6px 10px; letter-spacing: .06em; }
+  .mobile-topbar .cloud-badge { padding: 5px 10px; font-size: 11px; }
+  .mobile-topbar .user-badge { padding: 6px 10px; gap: 6px; }
+  .mobile-topbar .user-badge-avatar { width: 28px; height: 28px; font-size: 13px; }
+  .mobile-topbar .user-badge-name { font-size: 13px; }
 
-  /* ── STATS GRID ── */
+  /* ── STATS GRID — 2 cols for readability ── */
   .stats-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px; margin-bottom: 1rem;
-  }
-  .stat { padding: 10px 8px; }
-  .stat label { font-size: 9px; margin-bottom: 4px; }
-  .stat .val { font-size: 16px; }
-
-  /* ── CONSOLE GRID ── */
-  .console-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px; margin-bottom: 1rem;
   }
-  .ccard { padding: 12px 10px; }
-  .console-name { font-size: 11px; }
-  .timer { font-size: 20px; }
-  .console-img-wrap { height: 60px; margin: 6px 0; }
-  .console-img-wrap img { max-height: 52px; }
-  .act-row { gap: 4px; margin-top: 8px; }
-  .abtn { font-size: 10px; padding: 6px 4px; }
-  .earned { font-size: 11px; }
-  .sess-meta { font-size: 10px; }
+  .stat { padding: 14px 12px; border-radius: 10px; }
+  .stat label { font-size: 11px; margin-bottom: 6px; letter-spacing: .08em; }
+  .stat .val { font-size: 22px; }
+
+  /* ── CONSOLE GRID — 1 col on mobile for proper card size ── */
+  .console-grid {
+    grid-template-columns: 1fr;
+    gap: 10px; margin-bottom: 1rem;
+  }
+  .ccard { padding: 16px 14px; border-radius: 14px; }
+  .console-name { font-size: 15px; letter-spacing: .06em; }
+  .timer { font-size: 30px; letter-spacing: .05em; }
+  .console-img-wrap { height: 72px; margin: 8px 0; }
+  .console-img-wrap img { max-height: 64px; }
+  .act-row { gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .abtn {
+    font-size: 12px; padding: 10px 10px;
+    border-radius: 8px; flex: 1; min-width: 60px;
+    min-height: 40px; display: flex; align-items: center; justify-content: center;
+  }
+  .earned { font-size: 15px; font-weight: 700; }
+  .sess-meta { font-size: 12px; margin-top: 4px; }
+  .badge { font-size: 11px; padding: 3px 10px; }
 
   /* ── SECTION HEADER ── */
-  .section-head { margin-bottom: 8px; }
-  .section-head h2 { font-size: 10px; }
+  .section-head { margin-bottom: 10px; }
+  .section-head h2 { font-size: 12px; letter-spacing: .12em; }
+  .filters { gap: 8px; }
+  .fbtn { font-size: 12px; padding: 6px 16px; }
 
   /* ── HISTORY ── */
-  .hist-name { font-size: 10px; }
-  .hist-sub { font-size: 10px; }
-  .hist-amt { font-size: 13px; }
+  .hist-row { padding: 14px 0; }
+  .hist-name { font-size: 13px; }
+  .hist-sub { font-size: 12px; }
+  .hist-amt { font-size: 17px; }
+  .hist-dur { font-size: 12px; }
+  .pay-tag { font-size: 11px; padding: 3px 10px; }
 
-  /* ── MODALS ── */
+  /* ── MODALS — full bottom sheet ── */
   .modal-bg { padding: 0; align-items: flex-end; }
   .modal {
-    border-radius: 20px 20px 0 0;
+    border-radius: 22px 22px 0 0;
     width: 100% !important; max-width: 100% !important;
-    max-height: 92vh;
-    padding: 20px 16px calc(16px + var(--safe-bottom));
+    max-height: 93vh;
+    padding: 22px 18px calc(20px + var(--safe-bottom));
+    box-shadow: 0 -8px 40px rgba(0,0,0,.5);
   }
+  .modal h3 { font-size: 16px; margin-bottom: 6px; }
+  .modal-sub { font-size: 13px; margin-bottom: 18px; }
+  .modal input, .modal select {
+    font-size: 16px; /* prevents iOS zoom */
+    padding: 12px 14px; margin-bottom: 14px;
+  }
+  .modal label { font-size: 12px; margin-bottom: 6px; }
   .modal.wide, .modal.xl { width: 100% !important; max-width: 100% !important; }
 
+  /* ── MODAL BUTTONS ── */
+  .mbtns { gap: 10px; margin-top: 10px; }
+  .mbtns .btn { padding: 14px 10px; font-size: 14px; border-radius: 10px; min-height: 48px; }
+
+  /* ── ALL BUTTONS — bigger touch targets ── */
+  .btn { padding: 10px 14px; font-size: 13px; min-height: 42px; }
+
+  /* ── PLAYER SELECTOR ── */
+  .psel-btn { width: 62px; height: 62px; font-size: 22px; border-radius: 10px; }
+  .psel-btn .plabel { font-size: 10px; }
+
+  /* ── PAYMENT BUTTONS ── */
+  .pay-btn { padding: 16px 6px; font-size: 12px; border-radius: 10px; min-height: 70px; }
+  .pay-icon { font-size: 24px; }
+
+  /* ── DURATION GRID ── */
+  .dur-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .dur-btn { padding: 12px 4px; font-size: 11px; min-height: 44px; border-radius: 10px; }
+
+  /* ── BILL TOTAL ── */
+  .bill-total-amt { font-size: 34px; }
+  .bill-total-row { padding: 14px 0; margin: 12px 0 18px; }
+  .bill-total-label { font-size: 12px; }
+
+  /* ── BREAKDOWN ── */
+  .breakdown-box { font-size: 13px; line-height: 2.2; }
+
   /* ── LOGIN SCREEN ── */
-  .login-box { width: 100%; max-width: 340px; padding: 24px 20px; }
-  .user-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .user-tile { padding: 10px 8px; }
-  .user-avatar { width: 32px; height: 32px; font-size: 16px; }
-  .user-tile-name { font-size: 11px; }
+  .login-box {
+    width: 100%; max-width: 100%;
+    padding: 28px 22px;
+    border-radius: 0;
+    min-height: 100vh;
+    justify-content: center;
+    display: flex; flex-direction: column;
+  }
+  .login-logo { margin-bottom: 28px; }
+  .login-logo-icon { width: 52px; height: 52px; font-size: 26px; }
+  .login-logo h2 { font-size: 17px; }
+  .login-title { font-size: 15px; margin-bottom: 8px; }
+  .login-sub { font-size: 13px; margin-bottom: 22px; }
+  .user-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+  .user-tile { padding: 16px 10px; border-radius: 14px; gap: 8px; }
+  .user-avatar { width: 44px; height: 44px; font-size: 22px; }
+  .user-tile-name { font-size: 13px; }
+  .user-tile-role { font-size: 11px; }
+  .login-field input { font-size: 16px; padding: 12px 14px; } /* no iOS zoom */
+  .login-field label { font-size: 12px; margin-bottom: 6px; }
+  .login-btn { padding: 14px; font-size: 14px; margin-top: 18px; border-radius: 10px; min-height: 50px; }
+  .add-user-link { font-size: 14px; }
 
   /* ── BRANCH SCREEN ── */
-  .branch-box { width: 100%; max-width: 340px; padding: 24px 20px; }
-  .branch-tiles { gap: 8px; }
-  .branch-tile { padding: 14px 10px; }
+  .branch-box {
+    width: 100%; max-width: 100%;
+    padding: 28px 22px;
+    border-radius: 0;
+    min-height: 100vh;
+    justify-content: center;
+    display: flex; flex-direction: column;
+  }
+  .branch-tiles { gap: 10px; }
+  .branch-tile { padding: 20px 12px; border-radius: 14px; }
+  .branch-tile .bt-icon { font-size: 36px; margin-bottom: 10px; }
+  .branch-tile .bt-name { font-size: 14px; }
+  .branch-tile .bt-desc { font-size: 12px; margin-top: 4px; }
 
   /* ── NOTIF PANEL ── */
   .notif-panel {
-    top: auto; bottom: calc(70px + var(--safe-bottom));
+    top: auto; bottom: calc(80px + var(--safe-bottom));
     right: 8px; left: 8px; width: auto;
+    border-radius: 16px;
   }
-
-  /* ── BUTTONS ── */
-  .btn { padding: 8px 10px; font-size: 11px; }
-  .mbtns { gap: 8px; }
-  .mbtns .btn { padding: 11px 10px; font-size: 12px; }
+  .notif-title { font-size: 13px; }
+  .notif-msg { font-size: 12px; }
+  .notif-time { font-size: 11px; }
+  .notif-icon { font-size: 22px; }
 
   /* ── MOBILE NAV visible ── */
   .mobile-nav { display: grid; }
 
   /* ── HIDE desktop-only stuff ── */
   .clock-desktop { display: none; }
+
+  /* ── REPORT SCREENS ── */
+  .rpt-summary { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .rpt-card { padding: 14px 14px; }
+  .rpt-card label { font-size: 11px; }
+  .rpt-card .rval { font-size: 22px; }
+  .rpt-table th { font-size: 11px; padding: 10px 10px; }
+  .rpt-table td { font-size: 12px; padding: 11px 10px; }
+  .rpt-amt { font-size: 14px; }
+  .date-field input[type=date] { font-size: 16px; padding: 12px; }
+  .go-btn { padding: 12px 20px; font-size: 13px; min-height: 46px; }
+
+  /* ── BOOKING LIST ── */
+  .bk-name { font-size: 14px; }
+  .bk-meta { font-size: 12px; }
+  .bk-del { padding: 8px 14px; font-size: 12px; }
+
+  /* ── USER LIST ── */
+  .uli-name { font-size: 14px; }
+  .uli-role { font-size: 11px; }
+  .uli-del { padding: 8px 14px; font-size: 12px; }
+
+  /* ── SPLIT INPUTS ── */
+  .split-row input { font-size: 16px; padding: 10px 12px; }
+  .split-row label { font-size: 12px; }
+  .split-balance { font-size: 13px; padding: 10px 14px; }
 }
 
-@media (max-width: 400px) {
-  .console-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
-  .stats-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; }
-  .stat .val { font-size: 14px; }
-  .ccard { padding: 10px 8px; }
-  .timer { font-size: 17px; }
-  .abtn { font-size: 9px; padding: 5px 3px; }
+/* ── LANDSCAPE PHONES — 2-col console grid ── */
+@media (max-width: 768px) and (orientation: landscape) {
+  .console-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stats-grid { grid-template-columns: repeat(4, 1fr); }
+  .app { padding: .75rem .85rem calc(75px + var(--safe-bottom)); }
+}
+
+/* ── VERY SMALL PHONES (< 360px) ── */
+@media (max-width: 360px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .stat .val { font-size: 19px; }
+  .stat label { font-size: 10px; }
+  .ccard { padding: 14px 12px; }
+  .timer { font-size: 26px; }
+  .abtn { font-size: 11px; padding: 9px 8px; }
+  .console-name { font-size: 13px; }
+  .mnav-icon { width: 40px; height: 40px; font-size: 20px; }
+  .mnav-btn { font-size: 10px; }
 }
 
 </style>
@@ -651,7 +768,7 @@ body { overscroll-behavior: none; }
 <style>
 /* ── BRANCH / CLOUD SETUP ── */
 .branch-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;z-index:1000;
+  align-items:center;justify-content:center;z-index:1000;overflow-y:auto;-webkit-overflow-scrolling:touch;
   background-image:radial-gradient(ellipse 70% 50% at 30% 20%,rgba(0,245,255,.08) 0%,transparent 60%),
   radial-gradient(ellipse 60% 40% at 70% 80%,rgba(255,60,172,.08) 0%,transparent 60%);}
 .branch-box{width:360px;max-width:95vw;background:var(--bg2);border:1px solid var(--border2);
