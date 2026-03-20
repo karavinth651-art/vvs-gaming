@@ -1609,33 +1609,66 @@ function calcAmount(ms,type,players){
   var cfg=CONSOLE_CONFIG[type];
   var ep=Math.max(0,players-1);
   var totalMins=ms/60000;
-  var slots30=Math.ceil(totalMins/30);   // round up to nearest 30min block
-  var fullHours=Math.floor(slots30/2);   // complete 1hr periods
-  var halfSlots=slots30%2;               // leftover 30min block (0 or 1)
-  // Base is halved for 30min, extra player is ALWAYS full rate per period
-  return Math.round(fullHours*(cfg.base + cfg.extra*ep) + halfSlots*(cfg.base/2 + cfg.extra*ep));
+
+  // Rule (repeats every 60min cycle):
+  // 0-10min  → free
+  // 10-30min → 30min slot (half rate)
+  // 30-40min → free
+  // 40-60min → 1hr slot (full rate, i.e. adds another 30min slot on top)
+  // So within each 60min cycle: slot at 10min, another slot at 40min
+  // Each cycle can add 0, 1, or 2 slots of 30min each
+
+  var fullCycles = Math.floor(totalMins / 60); // complete 60min cycles
+  var remainder  = totalMins % 60;             // leftover minutes in current cycle
+
+  // slots per complete cycle = 2 (one at 10min, one at 40min)
+  var slots30 = fullCycles * 2;
+
+  // slots in the remainder
+  if(remainder > 40)      slots30 += 2; // passed both 10min and 40min marks
+  else if(remainder > 10) slots30 += 1; // passed 10min mark only
+  // 0-10min in remainder = 0 extra slots (free)
+
+  var fullHours = Math.floor(slots30 / 2);
+  var halfSlot  = slots30 % 2;
+  return Math.round(fullHours*(cfg.base + cfg.extra*ep) + halfSlot*(cfg.base/2 + cfg.extra*ep));
 }
+
 function buildBreakdown(ms,type,players){
   var cfg=CONSOLE_CONFIG[type];
   var ep=Math.max(0,players-1);
   var totalMins=ms/60000;
-  var slots30=Math.ceil(totalMins/30);
-  var fh=Math.floor(slots30/2);
-  var hs=slots30%2;
   var lines=[];
-  if(fh>0){
-    var hBase=fh*cfg.base;
-    var hExtra=fh*cfg.extra*ep;
-    lines.push(fh+' hr x Rs.'+cfg.base+' base = Rs.'+hBase);
-    if(ep>0) lines.push(fh+' hr x Rs.'+cfg.extra+' x '+ep+' extra player'+(ep>1?'s':'')+' = Rs.'+hExtra);
-    lines.push('  Subtotal '+fh+'hr: Rs.'+(hBase+hExtra));
+
+  lines.push('Billing: 0-10min free | 10-30min = 30min slot | 30-40min free | 40-60min = +30min slot');
+
+  var fullCycles = Math.floor(totalMins / 60);
+  var remainder  = totalMins % 60;
+  var slots30 = fullCycles * 2;
+  if(remainder > 40)      slots30 += 2;
+  else if(remainder > 10) slots30 += 1;
+
+  if(slots30 === 0){
+    lines.push('Played: '+Math.ceil(totalMins)+'min → still in free window → Rs.0');
+    return lines;
   }
-  if(hs>0){
-    var hfBase=cfg.base/2;
-    var hfExtra=cfg.extra*ep;
-    lines.push('30 min x Rs.'+hfBase+' base = Rs.'+hfBase);
-    if(ep>0) lines.push('30 min x Rs.'+cfg.extra+' x '+ep+' extra player'+(ep>1?'s':'')+' = Rs.'+hfExtra);
-    lines.push('  Subtotal 30min: Rs.'+(hfBase+hfExtra));
+
+  lines.push('Played: '+Math.ceil(totalMins)+'min → '+slots30+' x 30min slot'+(slots30>1?'s':''));
+
+  var fullHours = Math.floor(slots30 / 2);
+  var halfSlot  = slots30 % 2;
+
+  if(fullHours > 0){
+    var hBase  = fullHours * cfg.base;
+    var hExtra = fullHours * cfg.extra * ep;
+    lines.push(fullHours+' hr x Rs.'+cfg.base+' = Rs.'+hBase);
+    if(ep>0) lines.push(fullHours+' hr x Rs.'+cfg.extra+' x '+ep+' extra player'+(ep>1?'s':'')+' = Rs.'+hExtra);
+  }
+  if(halfSlot > 0){
+    var hfBase  = cfg.base/2;
+    var hfExtra = cfg.extra*ep;
+    lines.push('+ 30min x Rs.'+hfBase+' = Rs.'+hfBase);
+    if(ep>0) lines.push('+ 30min x Rs.'+cfg.extra+' x '+ep+' extra player'+(ep>1?'s':'')+' = Rs.'+hfExtra);
   }
   return lines;
 }
