@@ -2163,6 +2163,36 @@ function renderConsoles(){
     grid.appendChild(add);
   }
 }
+// ── ALARM SOUND (Web Audio API) ──
+function playAlarmSound(){
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var beeps = [
+      {freq:880, start:0,    dur:0.18},
+      {freq:880, start:0.22, dur:0.18},
+      {freq:880, start:0.44, dur:0.18},
+      {freq:1100,start:0.66, dur:0.32},
+      {freq:880, start:1.05, dur:0.18},
+      {freq:880, start:1.27, dur:0.18},
+      {freq:1100,start:1.50, dur:0.45}
+    ];
+    beeps.forEach(function(b){
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = b.freq;
+      gain.gain.setValueAtTime(0, ctx.currentTime + b.start);
+      gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + b.start + 0.01);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + b.start + b.dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + b.start);
+      osc.stop(ctx.currentTime + b.start + b.dur + 0.02);
+    });
+    setTimeout(function(){ try{ ctx.close(); }catch(e){} }, 2500);
+  } catch(e){ console.log('Audio error:', e); }
+}
+
 function openBookingForConsole(id){
   openBookings();
   setTimeout(function(){
@@ -2711,6 +2741,7 @@ function tick(){
           hrAlertsFired[key]=true;
           var amt=calcAmount(ms,c.type,c.session.playerCount);
           pushNotif('Clock',hrs+'hr Alert - '+c.name,hrs+' hour'+(hrs>1?'s':'')+' elapsed | '+c.session.playerCount+' player'+(c.session.playerCount>1?'s':'')+' | Rs.'+amt+' so far');
+          playAlarmSound();
         }
       }
       var el=document.getElementById('t-'+c.id);
@@ -3356,36 +3387,12 @@ window.onload=function(){
 </div>
 
 <script>
-// ── SERVICE WORKER (inline, registered via blob) ──
-var SW_CODE = `
-const CACHE = 'vvs-gaming-v1';
-const ASSETS = ['/'];
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
-});
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-  ));
-  self.clients.claim();
-});
-self.addEventListener('fetch', e => {
-  if(e.request.method !== 'GET') return;
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
-});
-`;
-
+// ── SERVICE WORKER ──
+// SW must be served from a real file — register only if sw.js exists
 if('serviceWorker' in navigator){
-  try {
-    var blob = new Blob([SW_CODE], {type:'application/javascript'});
-    var swUrl = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl).then(function(reg){
-      console.log('SW registered');
-    }).catch(function(e){ console.log('SW error', e); });
-  } catch(e){ console.log('SW blob error', e); }
+  navigator.serviceWorker.register('sw.js').then(function(reg){
+    console.log('SW registered', reg.scope);
+  }).catch(function(e){ console.log('SW not available (open via server):', e.message); });
 }
 
 // ── PWA INSTALL PROMPT ──
