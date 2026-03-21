@@ -1602,7 +1602,6 @@ var editId=null, billConsoleId=null, selectedPayMethod=null;
 var selectedDuration=0; // 0=no limit, else minutes
 var groups=[]; // [{id, consoleIds:[]}]
 var groupSelectIds=[]; // consoles selected via long-press for combined bill
-var _longPressTimer=null;
 var linkSourceId=null; // console being linked from
 var addPlayerConsoleId=null; // console for add-player
 var newPlayerCount=1;
@@ -2166,7 +2165,7 @@ function renderConsoles(){
       // Touch long press
       div.setAttribute('ontouchstart','startLongPress('+c.id+',event)');
       div.setAttribute('ontouchend','cancelLongPress()');
-      div.setAttribute('ontouchmove','cancelLongPress()');
+      div.setAttribute('ontouchmove','onLongPressTouchMove(event)');
     }
     div.innerHTML=consoleImg
       +'<div class="ccard-body">'
@@ -3080,19 +3079,38 @@ function getGroupOf(cid){
 }
 
 // ── PRESS & HOLD GROUP SELECTION ──
+var _lpTimer = null;
+var _lpFired = false;
+var _lpStartX = 0;
+var _lpStartY = 0;
+
 function startLongPress(id, e){
+  _lpFired = false;
   cancelLongPress();
-  _longPressTimer = setTimeout(function(){
-    _longPressTimer = null;
+  var touch = e.touches ? e.touches[0] : e;
+  _lpStartX = touch.clientX;
+  _lpStartY = touch.clientY;
+  _lpTimer = setTimeout(function(){
+    _lpFired = true;
+    _lpTimer = null;
     onCardLongPress(id);
-  }, 600);
+  }, 700);
 }
 function cancelLongPress(){
-  if(_longPressTimer){ clearTimeout(_longPressTimer); _longPressTimer=null; }
+  if(_lpTimer){ clearTimeout(_lpTimer); _lpTimer = null; }
+}
+function onLongPressTouchMove(e){
+  // Cancel if finger moved more than 10px
+  var touch = e.touches ? e.touches[0] : e;
+  var dx = touch.clientX - _lpStartX;
+  var dy = touch.clientY - _lpStartY;
+  if(Math.sqrt(dx*dx+dy*dy) > 10) cancelLongPress();
 }
 function onCardLongPress(id){
   var c=findById(consoles,id);
   if(!c||(c.status!=='playing'&&c.status!=='paused')) return;
+  // Vibrate to confirm selection
+  if(navigator.vibrate) navigator.vibrate(80);
   var idx=groupSelectIds.indexOf(id);
   if(idx===-1){
     groupSelectIds.push(id);
@@ -3103,6 +3121,8 @@ function onCardLongPress(id){
   updateGroupSelectBanner();
 }
 function onCardTap(id){
+  // If long press just fired, block the click
+  if(_lpFired){ _lpFired=false; return; }
   // If group selection is active, add this console and show combined bill
   if(groupSelectIds.length>0){
     var c=findById(consoles,id);
