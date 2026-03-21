@@ -2790,8 +2790,8 @@ function tick(){
         var limitMs=c.session.limitMins*60000;
         if(ms>=limitMs){
           c.session.autoEndFired=true;
-          // Push alert and open bill automatically
           pushNotif('TIME','Time Up! - '+c.name,'Session limit of '+c.session.limitMins+' min reached. Billing popup opened.');
+          playAlarmSound(c.name + ' — Time Up!');
           openBill(c.id);
         }
       }
