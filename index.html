@@ -1501,6 +1501,10 @@ function doFirebaseInit(branchKey, branchName){
         if(data.sessionHistory) sessionHistory = toArr(data.sessionHistory);
         if(data.bookings) bookings = toArr(data.bookings);
         if(data.users) users = toArr(data.users);
+        if(data.consoleConfig){
+          var cc = data.consoleConfig;
+          Object.keys(cc).forEach(function(k){ CONSOLE_CONFIG[k] = cc[k]; });
+        }
       } else {
         saveToCloud();
       }
@@ -1535,7 +1539,8 @@ function saveToCloud(){
     consoles: consoles,
     sessionHistory: sessionHistory,
     bookings: bookings,
-    users: users
+    users: users,
+    consoleConfig: CONSOLE_CONFIG
   };
   cloudRef.set(payload, function(err){
     isSyncing = false;
