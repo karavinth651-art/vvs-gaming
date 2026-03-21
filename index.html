@@ -2402,6 +2402,20 @@ function confirmStart(){
   closeM('m-start'); renderConsoles(); updateStats(); scheduleSave();
   var durInfo=selectedDuration>0?(' | '+selectedDuration+' min limit'):'';
   pushNotif('Game','Session Started',c.name+' started with '+selectedPlayers+' player'+(selectedPlayers>1?'s':'')+durInfo+'.');
+  // Register SW background alarm for duration limit
+  if(selectedDuration>0){
+    var alarmTime = c.session.start + selectedDuration*60000;
+    swRegisterAlarm(c.id+'_dur', alarmTime, c.name+' — '+selectedDuration+' min Time Up!');
+  }
+  // Always register hourly alarms for 1hr, 2hr, 3hr, 4hr
+  for(var h=1;h<=6;h++){
+    var hrTime = c.session.start + h*3600000;
+    swRegisterAlarm(c.id+'_hr'+h, hrTime, c.name+' — '+h+' Hour Alert!');
+  }
+  // Request notification permission for background alerts
+  if('Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
 }
 function openBill(id){
   billConsoleId=id; selectedPayMethod=null;
@@ -2470,6 +2484,8 @@ function confirmBill(){
   for(var k in hrAlertsFired){ if(k.indexOf(c.id+'_')===0) keys.push(k); }
   for(var ki=0;ki<keys.length;ki++) delete hrAlertsFired[keys[ki]];
   c.status='free'; c.session=null; c._pendingEnd=null; c._pendingDur=null; c._pendingAmt=null;
+  swCancelAllAlarmsForConsole(c.id);
+  stopAlarmSound();
   closeM('m-bill'); renderConsoles(); renderHistory(); updateStats(); scheduleSave();
 }
 function cancelBill(){ closeM('m-bill'); }
@@ -3461,6 +3477,33 @@ if('serviceWorker' in navigator){
     console.log('SW registered', reg.scope);
   }).catch(function(e){ console.log('SW not available (open via server):', e.message); });
 }
+
+// ── SW BACKGROUND ALARM HELPERS ──
+function swSend(msg){
+  if(!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+  navigator.serviceWorker.controller.postMessage(msg);
+}
+function swRegisterAlarm(key, timeMs, label){
+  swSend({type:'REGISTER_ALARM', key:String(key), time:timeMs, label:label});
+}
+function swCancelAlarm(key){
+  swSend({type:'CANCEL_ALARM', key:String(key)});
+}
+function swCancelAllAlarmsForConsole(consoleId){
+  swSend({type:'CANCEL_ALARM', key:consoleId+'_dur'});
+  for(var h=1;h<=6;h++) swSend({type:'CANCEL_ALARM', key:consoleId+'_hr'+h});
+}
+
+// Listen for alarm messages from SW (fires when screen was off)
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', function(e){
+    var data = e.data;
+    if(data && data.type === 'PLAY_ALARM'){
+      playAlarmSound(data.label || 'Time Up!');
+    }
+  });
+}
+
 
 // ── PWA INSTALL PROMPT ──
 var pwaPrompt = null;
