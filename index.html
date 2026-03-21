@@ -940,10 +940,6 @@ body { overscroll-behavior: none; }
     <div class="stat c-cyan"><label>Total</label><div class="val" id="s-total">0</div></div>
     <div class="stat c-pink"><label>Playing</label><div class="val" id="s-playing">0</div></div>
     <div class="stat c-green"><label>Available</label><div class="val" id="s-free">0</div></div>
-    <div class="stat c-green"><label>Revenue</label><div class="val" id="s-rev">₹0</div></div>
-    <div class="stat c-cyan"><label>Cash</label><div class="val" id="s-cash">₹0</div></div>
-    <div class="stat c-purple"><label>QR</label><div class="val" id="s-qr">₹0</div></div>
-    <div class="stat c-orange"><label>Live ₹</label><div class="val" id="s-live">₹0</div></div>
   </div>
 
   <div class="section-head">
@@ -2057,10 +2053,6 @@ function updateStats(){
   document.getElementById('s-total').textContent=consoles.length;
   document.getElementById('s-playing').textContent=filterArr(consoles,function(c){return c.status==='playing'||c.status==='paused';}).length;
   document.getElementById('s-free').textContent=filterArr(consoles,function(c){return c.status==='free';}).length;
-  document.getElementById('s-rev').textContent='Rs.'+rev.toLocaleString();
-  document.getElementById('s-cash').textContent='Rs.'+cash.toLocaleString();
-  document.getElementById('s-qr').textContent='Rs.'+qr.toLocaleString();
-  document.getElementById('s-live').textContent='Rs.'+live.toLocaleString();
 }
 function renderConsoles(){
   var grid=document.getElementById('cgrid');
