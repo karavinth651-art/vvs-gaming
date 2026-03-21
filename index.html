@@ -361,6 +361,8 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-body)
 .abtn.cancel-book:hover{background:rgba(255,107,53,.16)}
 .abtn-edit{max-width:46px;background:rgba(255,255,255,.04);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--rad-sm);font-size:11px;padding:7px 6px;cursor:pointer;font-family:var(--font-body);font-weight:600;transition:all .2s}
 .abtn-edit:hover{border-color:var(--neon-cyan);color:var(--neon-cyan)}
+.abtn-del{background:rgba(255,60,172,.08);color:var(--neon-pink);border:1px solid rgba(255,60,172,.3);border-radius:var(--rad-sm);font-size:12px;padding:7px 8px;cursor:pointer;font-family:var(--font-body);font-weight:700;transition:all .2s}
+.abtn-del:hover{background:rgba(255,60,172,.22);border-color:var(--neon-pink)}
 .add-card{border:1px dashed rgba(0,245,255,.2);border-radius:var(--rad);padding:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:13px;background:transparent;width:100%;min-height:88px;font-family:var(--font-body);font-weight:500;transition:all .2s}
 .add-card:hover{background:rgba(0,245,255,.04);border-color:var(--neon-cyan);color:var(--neon-cyan)}
 
@@ -2069,7 +2071,7 @@ function renderConsoles(){
     var earned=calcAmount(elapsed,c.type,c.session?c.session.playerCount:1);
     var rateHint=(c.type==='VR'||c.type==='WHEEL')?('Rs.'+cfg.base+'/hr'):('Rs.'+cfg.base+'/hr+Rs.'+cfg.extra+'/P');
     var statusLabel=(c.status==='playing')?'Live':(c.status==='paused'?'Paused':(c.status==='free'?'Free':(c.status==='booked'?'Booked':'Maint')));
-    var editBtn=isAdmin()?('<button class="abtn-edit" onclick="openEdit('+c.id+')">Edit</button>'):'';
+    var editBtn=isAdmin()?('<button class="abtn-edit" onclick="openEdit('+c.id+')">Edit</button><button class="abtn-del" onclick="removeConsole('+c.id+')">✕</button>'):'';
 
     var bookingInfoHtml='';
     if(c.status==='booked'){
@@ -2513,6 +2515,14 @@ function openAddConsole(){
   document.getElementById('i-type').value='PS5';
   populateConsoleModal(TYPE_DEFAULTS.PS5,'Add Console');
   document.getElementById('m-console').style.display='flex';
+}
+
+function removeConsole(id){
+  var c=findById(consoles,id);
+  if(!c) return;
+  if(!confirm('Remove "'+c.name+'"? This cannot be undone.')) return;
+  consoles=consoles.filter(function(x){ return x.id!==id; });
+  renderConsoles(); updateStats(); scheduleSave();
 }
 
 function openEdit(id){
