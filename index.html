@@ -374,6 +374,13 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-body)
 .abtn-edit:hover{border-color:var(--neon-cyan);color:var(--neon-cyan)}
 .abtn-del{background:rgba(255,60,172,.08);color:var(--neon-pink);border:1px solid rgba(255,60,172,.3);border-radius:var(--rad-sm);font-size:12px;padding:7px 8px;cursor:pointer;font-family:var(--font-body);font-weight:700;transition:all .2s}
 .abtn-del:hover{background:rgba(255,60,172,.22);border-color:var(--neon-pink)}
+/* ── GROUP SELECT ── */
+.ccard.grp-selected{border-color:var(--neon-purple)!important;box-shadow:0 0 28px rgba(191,90,242,.45)!important;}
+.ccard.grp-selected::before{background:linear-gradient(90deg,var(--neon-purple),var(--neon-pink))!important;}
+#grp-select-banner{display:none;position:fixed;bottom:70px;left:0;right:0;z-index:500;background:linear-gradient(135deg,rgba(191,90,242,.95),rgba(255,60,172,.95));padding:12px 16px;align-items:center;gap:10px;box-shadow:0 -4px 20px rgba(191,90,242,.5);}
+#grp-select-count{flex:1;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em;}
+.grp-select-action{background:#fff;color:#bf5af2;border:none;border-radius:8px;padding:8px 14px;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.grp-select-cancel{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:8px;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Orbitron',monospace;}
 .add-card{border:1px dashed rgba(0,245,255,.2);border-radius:var(--rad);padding:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:13px;background:transparent;width:100%;min-height:88px;font-family:var(--font-body);font-weight:500;transition:all .2s}
 .add-card:hover{background:rgba(0,245,255,.04);border-color:var(--neon-cyan);color:var(--neon-cyan)}
 
@@ -1594,6 +1601,8 @@ var sessionHistory=[], activeFilter='all', pendingStartId=null, selectedPlayers=
 var editId=null, billConsoleId=null, selectedPayMethod=null;
 var selectedDuration=0; // 0=no limit, else minutes
 var groups=[]; // [{id, consoleIds:[]}]
+var groupSelectIds=[]; // consoles selected via long-press for combined bill
+var _longPressTimer=null;
 var linkSourceId=null; // console being linked from
 var addPlayerConsoleId=null; // console for add-player
 var newPlayerCount=1;
@@ -2121,14 +2130,12 @@ function renderConsoles(){
       var grpBillBtn=grp?('<button class="abtn grp-bill" onclick="openGrpBillFromCard('+c.id+')">Group Bill</button>'):'';
       actRow+='<button class="abtn pause" onclick="pauseSession('+c.id+')">|| Pause</button>'
         +'<button class="abtn add-player" onclick="openAddPlayer('+c.id+')">+P</button>'
-        +(grp?'':'<button class="abtn grp-link" onclick="openLink('+c.id+')">Link</button>')
         +grpBillBtn;
     }
     if(c.status==='paused'){
       var grpBillBtn2=grp?('<button class="abtn grp-bill" onclick="openGrpBillFromCard('+c.id+')">Group Bill</button>'):'';
       actRow+='<button class="abtn resume" onclick="resumeSession('+c.id+')">&#9654; Resume</button>'
         +'<button class="abtn add-player" onclick="openAddPlayer('+c.id+')">+P</button>'
-        +(grp?'':'<button class="abtn grp-link" onclick="openLink('+c.id+')">Link</button>')
         +grpBillBtn2;
     }
     if(c.status==='free'&&isAdmin()) actRow+='<button class="abtn maint" onclick="setMaint('+c.id+')">Maint</button>';
@@ -2143,15 +2150,23 @@ function renderConsoles(){
       var isLeader=(grp.consoleIds[0]===c.id);
       grpBadge='<span class="group-badge'+(isLeader?' leader':'')+'">'+(isLeader?'Group Leader':'Grouped')+'</span>';
     }
+    // Press-and-hold group select highlight
+    var isGroupSelected = (groupSelectIds.indexOf(c.id) !== -1);
     var div=document.createElement('div');
-    div.className='ccard '+c.status;
+    div.className='ccard '+c.status+(isGroupSelected?' grp-selected':'');
     if(c.status==='free'||c.status==='booked'){
       div.style.cursor='pointer';
       div.setAttribute('onclick','if(!event.target.closest("button"))openStart('+c.id+')');
     }
     if(c.status==='playing'||c.status==='paused'){
       div.style.cursor='pointer';
-      div.setAttribute('onclick','if(!event.target.closest("button"))openBill('+c.id+')');
+      // Long press = add to group selection; short tap = bill or group bill
+      div.setAttribute('onclick','if(!event.target.closest("button"))onCardTap('+c.id+')');
+      div.setAttribute('oncontextmenu','event.preventDefault();onCardLongPress('+c.id+')');
+      // Touch long press
+      div.setAttribute('ontouchstart','startLongPress('+c.id+',event)');
+      div.setAttribute('ontouchend','cancelLongPress()');
+      div.setAttribute('ontouchmove','cancelLongPress()');
     }
     div.innerHTML=consoleImg
       +'<div class="ccard-body">'
@@ -3064,6 +3079,100 @@ function getGroupOf(cid){
   return null;
 }
 
+// ── PRESS & HOLD GROUP SELECTION ──
+function startLongPress(id, e){
+  cancelLongPress();
+  _longPressTimer = setTimeout(function(){
+    _longPressTimer = null;
+    onCardLongPress(id);
+  }, 600);
+}
+function cancelLongPress(){
+  if(_longPressTimer){ clearTimeout(_longPressTimer); _longPressTimer=null; }
+}
+function onCardLongPress(id){
+  var c=findById(consoles,id);
+  if(!c||(c.status!=='playing'&&c.status!=='paused')) return;
+  var idx=groupSelectIds.indexOf(id);
+  if(idx===-1){
+    groupSelectIds.push(id);
+  } else {
+    groupSelectIds.splice(idx,1);
+  }
+  renderConsoles();
+  updateGroupSelectBanner();
+}
+function onCardTap(id){
+  // If group selection is active, add this console and show combined bill
+  if(groupSelectIds.length>0){
+    var c=findById(consoles,id);
+    if(!c||(c.status!=='playing'&&c.status!=='paused')) return;
+    if(groupSelectIds.indexOf(id)===-1) groupSelectIds.push(id);
+    showCombinedBillPopup();
+    return;
+  }
+  // Normal tap = open bill
+  openBill(id);
+}
+function updateGroupSelectBanner(){
+  var banner=document.getElementById('grp-select-banner');
+  if(!banner) return;
+  if(groupSelectIds.length===0){
+    banner.style.display='none';
+    return;
+  }
+  var names=groupSelectIds.map(function(id){
+    var c=findById(consoles,id); return c?c.name:'?';
+  });
+  document.getElementById('grp-select-count').textContent=groupSelectIds.length+' console'+(groupSelectIds.length>1?'s':'')+' selected: '+names.join(', ');
+  banner.style.display='flex';
+}
+function clearGroupSelection(){
+  groupSelectIds=[];
+  renderConsoles();
+  var banner=document.getElementById('grp-select-banner');
+  if(banner) banner.style.display='none';
+}
+function showCombinedBillPopup(){
+  var ids=groupSelectIds;
+  if(ids.length<2){ alert('Select at least 2 consoles by holding them.'); return; }
+  var rows='';
+  var total=0;
+  ids.forEach(function(id){
+    var c=findById(consoles,id);
+    if(!c||!c.session) return;
+    var ms=getElapsed(c);
+    var amt=calcAmount(ms,c.type,c.session.playerCount);
+    total+=amt;
+    rows+='<div class="grp-console-row">'
+      +'<div><div class="gcr-name">'+esc(c.name)+'</div>'
+      +'<div class="gcr-meta">'+c.session.playerCount+'P | '+fmtElapsed(ms)+'</div></div>'
+      +'<div class="gcr-amt">Rs.'+amt+'</div>'
+      +'</div>';
+  });
+  document.getElementById('combined-bill-rows').innerHTML=rows;
+  document.getElementById('combined-bill-total').textContent='Rs.'+total;
+  // Store ids for confirm
+  document.getElementById('m-combined-bill').dataset.ids=JSON.stringify(ids);
+  document.getElementById('m-combined-bill').style.display='flex';
+}
+function confirmCombinedBill(){
+  var ids=JSON.parse(document.getElementById('m-combined-bill').dataset.ids||'[]');
+  closeM('m-combined-bill');
+  clearGroupSelection();
+  // Open group bill for these consoles — create a temp group
+  if(ids.length>0){
+    var tempGrp={id:Date.now(),consoleIds:ids};
+    // Remove any existing groups for these consoles
+    groups=groups.filter(function(g){
+      return !g.consoleIds.some(function(cid){ return ids.indexOf(cid)!==-1; });
+    });
+    groups.push(tempGrp);
+    renderConsoles();
+    openGrpBill(tempGrp.id);
+  }
+}
+
 function openGroupManager(){
   if(!groups.length){ alert('No active groups.\n\nTo create a group:\n1. Start sessions on 2+ consoles\n2. Tap the Link button on a playing console card\n3. Select the other console(s) to group'); return; }
   if(groups.length===1){ openGrpBill(groups[0].id); return; }
@@ -3449,6 +3558,30 @@ window.onload=function(){
       <button class="btn danger" style="padding:14px;font-size:13px" onclick="closeM('m-mobile-menu');doLogout()">🚪 Logout</button>
     </div>
     <button class="btn" style="width:100%" onclick="closeM('m-mobile-menu')">Close</button>
+  </div>
+</div>
+
+<!-- GROUP SELECT BANNER -->
+<div id="grp-select-banner">
+  <span id="grp-select-count"></span>
+  <button class="grp-select-action" onclick="showCombinedBillPopup()">View Bill</button>
+  <button class="grp-select-cancel" onclick="clearGroupSelection()">✕</button>
+</div>
+
+<!-- COMBINED BILL MODAL -->
+<div id="m-combined-bill" style="display:none" class="modal-bg">
+  <div class="modal wide">
+    <h3>Combined Bill</h3>
+    <p class="modal-sub">Total amount for selected consoles</p>
+    <div id="combined-bill-rows"></div>
+    <div class="grp-total-row">
+      <span class="grp-total-label">Grand Total</span>
+      <span class="grp-total-amt" id="combined-bill-total">Rs.0</span>
+    </div>
+    <div class="mbtns">
+      <button class="btn" style="flex:1" onclick="closeM('m-combined-bill');clearGroupSelection()">Cancel</button>
+      <button class="btn primary" style="flex:1" onclick="confirmCombinedBill()">Proceed to Pay</button>
+    </div>
   </div>
 </div>
 
